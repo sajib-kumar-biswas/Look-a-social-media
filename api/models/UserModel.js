@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
+    reqReceived: {
+        type: Array,
+        default:[]
+    },
     isAdmin : {
         type: Boolean,
         default: false,

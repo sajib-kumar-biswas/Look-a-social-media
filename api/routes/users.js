@@ -30,9 +30,9 @@ router.put("/:id", async (req,res) => {
         req.body = {...req.body, password: req.body.newPassword};
         delete req.body.oldPassword;
         delete req.body.newPassword;
-        const retUser = await UserModel.findByIdAndUpdate(req.params.id, {$set: req.body});
+        const retUser = await UserModel.findByIdAndUpdate(req.params.id, {$set: req.body}, {new : true});
 
-        res.status(200).json("You successfully updated your profile.");
+        res.status(200).json(retUser);
     }catch(error) {
         res.status(500).json("You can only update your account.");
     }
@@ -121,8 +121,7 @@ router.put('/:id/follow', async (req,res) => {
             const user = await UserModel.findById(req.params.id);
             const currentUser = await UserModel.findById(req.body.userId);
 
-            if(!user.followers.includes(req.body.userId)) {
-                await user.updateOne({$push: {followers: req.body.userId}});
+            if(!user.followings.includes(req.body.userId)) {
                 await user.updateOne({$push: {followings: req.body.userId}});
                 await currentUser.updateOne({$push: {followings: req.params.id}});
                 res.status(200).json("user has been followed");
@@ -136,6 +135,72 @@ router.put('/:id/follow', async (req,res) => {
         res.status(403).json("you can't follow yourself.");
     }
 })
+
+// sent request 
+router.put('/:id/request', async (req,res) => {
+    if(req.body.userId !== req.params.id) {
+        try {
+            const user = await UserModel.findById(req.params.id);
+            const currentUser = await UserModel.findById(req.body.userId);
+
+            if(!user.reqReceived.includes(req.body.userId)) {
+                await user.updateOne({$push: {reqReceived: req.body.userId}});
+                res.status(200).json("request has sent");
+            }else {
+                res.status(403).json("You already sent a friend request.");
+            }
+        }catch(error) {
+            res.status(403).json(error.message);
+        }
+    } else {
+        res.status(403).json("you can't follow yourself.");
+    }
+})
+
+// reject friend request
+
+// cancel friend request
+router.put('/:id/cancel_request', async (req,res) => {
+    if(req.body.userId !== req.params.id) {
+        try {
+            const user = await UserModel.findById(req.params.id);
+            const currentUser = await UserModel.findById(req.body.userId);
+
+            if(user.reqReceived.includes(req.body.userId)) {
+                await user.updateOne({$pull: {reqReceived: req.body.userId}});
+                res.status(200).json("You cacelled this friend request.");
+            }else {
+                res.status(403).json("He did not send you a friend request.");
+            }
+        }catch(error) {
+            res.status(403).json(error.message);
+        }
+    } else {
+        res.status(403).json("you can't do this.");
+    }
+})
+
+// accept friend request
+router.put('/:id/accept_request', async (req,res) => {
+    if(req.body.userId !== req.params.id) {
+        try {
+            const user = await UserModel.findById(req.params.id);
+            const currentUser = await UserModel.findById(req.body.userId);
+
+            if(currentUser.reqReceived.includes(req.params.id)) {
+                await currentUser.updateOne({$pull: {reqReceived: req.params.id}});
+                res.status(200).json("You accepted this friend request.");
+            }else {
+                res.status(403).json("He did not send you a friend request.");
+            }
+        }catch(error) {
+            res.status(403).json(error.message);
+        }
+    } else {
+        res.status(403).json("you can't do this.");
+    }
+})
+
 
 // unfollow user
 router.put('/:id/unfollow', async (req,res) => {
